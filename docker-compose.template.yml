@@ -1,0 +1,46 @@
+version: "3.6"
+
+services:
+  mongo:
+     container_name: mongo 
+     image: laerinternal.com/mongo:0.1
+     volumes:
+        - mongo-data:/data/db
+
+  solr:
+     image: solr
+     volumes:
+         - type: volume
+           source: solr-data
+           target: /opt/solr/server/solr
+
+  search-indexer:
+     container_name: search-indexer
+     build:
+        context: .
+        args:
+            - maven
+            - mongo_db_key
+     depends_on:
+         - mongo
+         - solr
+     #volumes:
+         #- /home/laer/projects/search-indexer:/root/search-indexer
+     environment:
+         - MONGODB_IP=mongo
+         - MONGODB_PORT=27017
+         - SOLR_IP=solr
+         - SOLR_PORT=8983
+         - WAIT_HOSTS=mongo:27017,solr:8983
+         - WAIT_HOSTS_TIMEOUT=180
+     #command: sh -c "/wait"
+     command: sh -c "/wait && cd /root/search-indexer && ./build.sh {{case}}"
+
+volumes:
+  mongo-data:
+    name: mongo-data
+    external: true
+
+  solr-data:
+    name: solr-data
+    external: true
